@@ -25,11 +25,10 @@
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
 
-                <data
-                    android:scheme="oauth" />
-
+                <data android:scheme="oauth" />
             </intent-filter>
         </activity>
+        <activity android:name=".TimelineActivity"></activity>
     </application>
 
 </manifest>

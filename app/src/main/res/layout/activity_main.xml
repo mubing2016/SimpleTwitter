@@ -8,10 +8,10 @@
     android:paddingRight="@dimen/activity_horizontal_margin"
     android:paddingTop="@dimen/activity_vertical_margin"
     tools:context="app.com.example.android.twitteroauth.MainActivity"
-    android:orientation="horizontal">
+    android:orientation="vertical">
 
     <Button android:id="@+id/btnLoginTwitter"
-        android:layout_width="fill_parent"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="Login with Twitter"
         android:layout_marginLeft="10dip"
@@ -20,7 +20,7 @@
 
     <!-- user name label -->
     <TextView android:id="@+id/lblUserName"
-        android:layout_width="fill_parent"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:padding="10dip"
         android:layout_marginTop="30dip"/>
@@ -28,7 +28,7 @@
     <!-- label update status -->
     <TextView android:id="@+id/lblUpdate"
         android:text="Update Status"
-        android:layout_width="fill_parent"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginLeft="10dip"
         android:layout_marginRight="10dip"
@@ -36,14 +36,14 @@
 
     <!-- Tweet EditText -->
     <EditText android:id="@+id/txtUpdateStatus"
-        android:layout_width="fill_parent"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_margin="10dip"
         android:visibility="gone"/>
 
     <!-- Tweet Button -->
     <Button android:id="@+id/btnUpdateStatus"
-        android:layout_width="fill_parent"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="Tweet"
         android:layout_marginLeft="10dip"
@@ -52,13 +52,21 @@
 
     <!-- Twitter Logout button -->
     <Button android:id="@+id/btnLogoutTwitter"
-        android:layout_width="fill_parent"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="Logout from Twitter"
         android:layout_marginLeft="10dip"
         android:layout_marginRight="10dip"
         android:layout_marginTop="50dip"
-        android:visibility="gone"/>
+        android:visibility="gone" />
 
+    <Button android:id="@+id/btnGetTimeline"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Show My Timeline"
+        android:layout_marginLeft="10dip"
+        android:layout_marginRight="10dip"
+        android:layout_marginTop="60dip"
+        android:visibility="gone" />
 
 </LinearLayout>
