@@ -16,11 +16,16 @@ import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.google.gson.Gson;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
+
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.List;
 
+import twitter4j.ResponseList;
 import twitter4j.Status;
 import twitter4j.Twitter;
 import twitter4j.TwitterException;
@@ -31,9 +36,26 @@ import twitter4j.auth.RequestToken;
 import twitter4j.conf.Configuration;
 import twitter4j.conf.ConfigurationBuilder;
 
-public class MainActivity extends AppCompatActivity {
+import butterknife.BindView;
+import butterknife.ButterKnife;
+import timber.log.Timber;
 
-    private static final String LOG_TAG = MainActivity.class.getSimpleName();
+
+public class MainActivity extends AppCompatActivity {
+    @BindView(R.id.btnLoginTwitter)
+    Button btnLoginTwitter;
+    @BindView(R.id.btnUpdateStatus)
+    Button btnUpdateStatus;
+    @BindView(R.id.btnLogoutTwitter)
+    Button btnLogoutTwitter;
+    @BindView(R.id.btnGetTimeline)
+    Button btnGetTimeline;
+    @BindView(R.id.txtUpdateStatus)
+    EditText txtUpdate;
+    @BindView(R.id.lblUpdate)
+    TextView lblUpdate;
+    @BindView(R.id.lblUserName)
+    TextView lblUserName;
 
     private static final String TWITTER_CONSUMER_KEY = "FZ5upj4lpNv2EbjkPMF5MirWx";
     private static final String TWITTER_CONSUMER_SECRET = "aq8Q1B7u8iHGDxFCInnfkRpDr2Wg1XwGi7fiQtRoGdpdIfL5eX";
@@ -46,13 +68,6 @@ public class MainActivity extends AppCompatActivity {
     private static final String URL_TWITTER_OAUTH_VERIFIER = "oauth_verifier";
     private static final String URL_TWITTER_OAUTH_TOKEN = "oauth_token";
 
-    Button btnLoginTwitter;
-    Button btnUpdateStatus;
-    Button btnLogoutTwitter;
-    Button btnGetTimeline;
-    EditText txtUpdate;
-    TextView lblUpdate;
-    TextView lblUserName;
     ProgressDialog pDialog;
 
     private static Twitter twitter;
@@ -63,25 +78,18 @@ public class MainActivity extends AppCompatActivity {
     private User user;
     private ConnectionDetector cd;
     AlertDialogManager alert = new AlertDialogManager();
-    List<Status> statuses;
+    ResponseList<Status> statuses; //length of 20
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
 
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        ButterKnife.bind(this);
+
         setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
 
         checkInternet();
-
-        btnLoginTwitter = (Button) findViewById(R.id.btnLoginTwitter);
-        btnUpdateStatus = (Button) findViewById(R.id.btnUpdateStatus);
-        btnLogoutTwitter = (Button) findViewById(R.id.btnLogoutTwitter);
-        btnGetTimeline = (Button) findViewById(R.id.btnGetTimeline);
-        txtUpdate = (EditText) findViewById(R.id.txtUpdateStatus);
-        lblUpdate = (TextView) findViewById(R.id.lblUpdate);
-        lblUserName = (TextView) findViewById(R.id.lblUserName);
-
         mSharedPreferences = getApplicationContext().getSharedPreferences("MyPref", 0);
 
 
@@ -132,7 +140,6 @@ public class MainActivity extends AppCompatActivity {
         btnGetTimeline.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                //Log.v(LOG_TAG, "STATUS LIST: " + statuses.toString());
                 Intent intent = new Intent(MainActivity.this, TimelineActivity.class);
                 startActivity(intent);
             }
@@ -140,38 +147,9 @@ public class MainActivity extends AppCompatActivity {
 
     }
 
-//    public List<Status> getTimeline() {
-//
-//        try {
-//            //Twitter twitter = new TwitterFactory().getInstance();
-//            //User user = twitter.verifyCredentials();
-//            statuses = twitter.getHomeTimeline();
-//        } catch (TwitterException te) {
-//            te.printStackTrace();
-//            System.out.println("Failed to get timeline: " + te.getMessage());
-//            System.exit(-1);
-//        }
-//        return statuses;
-//        /** This if conditions is tested once is
-//         * redirected from twitter page. Parse the uri to get oAuth
-//         * Verifier
-//         * */
-//
-////        if (!isTwitterLoggedInAlready()) {
-////            Log.v(LOG_TAG, "DID NOT LOG IN");
-////            Uri uri = getIntent().getData();
-////            if (uri != null && uri.toString().startsWith(TWITTER_CALLBACK_URL)) {
-////                // oAuth verifier
-////                final String verifier = uri
-////                        .getQueryParameter(URL_TWITTER_OAUTH_VERIFIER);
-////                new OAuthAccessTokenTask().execute(verifier);
-////            }
-////        }
-//    }
 
     private void loginToTwitter() {
-        Log.v(LOG_TAG, "start log in");
-        // Check if already logged in
+        Timber.d("start log in");
         if (!isTwitterLoggedInAlready()) {
             twitter = TwitterFactory.getSingleton();
             //twitter.setOAuthConsumer(TWITTER_CONSUMER_KEY, TWITTER_CONSUMER_SECRET);
@@ -188,13 +166,13 @@ public class MainActivity extends AppCompatActivity {
                 public void run() {
                     try {
                         requestToken = twitter.getOAuthRequestToken(TWITTER_CALLBACK_URL);
-                        Log.v(LOG_TAG, requestToken.toString());
+                        Timber.d(requestToken.toString());
                         MainActivity.this.startActivity(new Intent(Intent.ACTION_VIEW, Uri
                                 .parse(requestToken.getAuthenticationURL())));
-                        Log.v(LOG_TAG, "lead to web");
+                        Timber.d("lead to web");
 
                     } catch (Exception e) {
-                        Log.e(LOG_TAG, "log in twitter error.");
+                        Timber.e("log in twitter error.");
                     }
                 }
             });
@@ -203,7 +181,7 @@ public class MainActivity extends AppCompatActivity {
             // user already logged into twitter
             Toast.makeText(getApplicationContext(),
                     "Already Logged into twitter", Toast.LENGTH_LONG).show();
-            Log.d(LOG_TAG, "GOT TOKEN");
+            Timber.d("GOT TOKEN");
 //            btnLoginTwitter.setVisibility(View.GONE);
 //            lblUpdate.setVisibility(View.VISIBLE);
 //            txtUpdate.setVisibility(View.VISIBLE);
@@ -230,37 +208,10 @@ public class MainActivity extends AppCompatActivity {
         if (uri != null && uri.toString().startsWith(TWITTER_CALLBACK_URL)) {
             // oAuth verifier
             final String verifier = uri.getQueryParameter(URL_TWITTER_OAUTH_VERIFIER);
-            Log.v(LOG_TAG, "VERIFIER: " + verifier);
+            Timber.v("VERIFIER: " + verifier);
             try {
                 new OAuthAccessTokenTask().execute(verifier);
-//                    SharedPreferences.Editor e = mSharedPreferences.edit();
-//
-//                    // After getting access token, access token secret
-//                    // store them in application preferences
-//                    e.putString(PREF_KEY_OAUTH_TOKEN, accessToken.getToken());
-//                    e.putString(PREF_KEY_OAUTH_SECRET,
-//                            accessToken.getTokenSecret());
-//                    // Store login status - true
-//                    e.putBoolean(PREF_KEY_TWITTER_LOGIN, true);
-//                    e.commit(); // save changes
-//
-//
-//
-//                    // Hide login button
-//                    Log.d(LOG_TAG, "GOT TOKEN");
-//                    btnLoginTwitter.setVisibility(View.GONE);
-//                    lblUpdate.setVisibility(View.VISIBLE);
-//                    Log.v(LOG_TAG, "SET VISIBLE");
-//                    txtUpdate.setVisibility(View.VISIBLE);
-//                    btnUpdateStatus.setVisibility(View.VISIBLE);
-//                    btnLogoutTwitter.setVisibility(View.VISIBLE);
-//
-//                    // Getting user details from twitter
-//                    // For now i am getting his name only
-//                    String username = user.getName();
-//
-//                    // Displaying in xml ui
-//                    lblUserName.setText(Html.fromHtml("<b>Welcome " + username + "</b>"));
+
             } catch (Exception e) {
                 //Log.e("Twitter OAuth Token", "> " + accessToken.getToken());
             }
@@ -274,14 +225,32 @@ public class MainActivity extends AppCompatActivity {
             Exception toReturn = null;
             try {
                 accessToken = twitter.getOAuthAccessToken(requestToken, params[0]);
-                Log.v(LOG_TAG, "ACCESS TOKEN: " + accessToken.toString());
+                Timber.v("ACCESS TOKEN: " + accessToken.toString());
                 user = twitter.showUser(accessToken.getUserId());
 
+                //Get user timeline
+                User user = twitter.verifyCredentials();
+                statuses = twitter.getHomeTimeline();
+                int statusLength = statuses.size();
+                Timber.v("STATUS LENGTH: " +   statuses.size());
+                Intent passArrIntent = new Intent(MainActivity.this, TimelineActivity.class);
+
+                String[] texts = new String[statusLength];
+                String[] userImg = new String[statusLength];
+
+                for (int i = 0; i < statusLength; i++) {
+                    texts[i] = statuses.get(i).getText();
+                    userImg[i] = statuses.get(i).getUser().getMiniProfileImageURL();
+                }
+
+
+                passArrIntent.putExtra("statuses", texts);
+                startActivity(passArrIntent);
             } catch (TwitterException e) {
-                Log.e(LOG_TAG, "Twitter Error: " + e.getErrorMessage());
+                Timber.e("Twitter Error: " + e.getErrorMessage());
                 toReturn = e;
             } catch (Exception e) {
-                Log.e(LOG_TAG, "Error: " + e.getMessage());
+                Timber.e("Error: " + e.getMessage());
                 toReturn = e;
             }
             return toReturn;
@@ -314,7 +283,7 @@ public class MainActivity extends AppCompatActivity {
 
 
                 // Hide login button
-                Log.d(LOG_TAG, "GOT TOKEN");
+                Timber.d("GOT TOKEN");
                 btnLoginTwitter.setVisibility(View.GONE);
 
                 // Show Update Twitter
@@ -336,16 +305,6 @@ public class MainActivity extends AppCompatActivity {
             }
         }
     }
-
-
-//    private void storeAccessToken(long useId, AccessToken accessToken) {
-//
-//
-//    }
-
-//    private void logoutFromTwitter() {
-//
-//    }
 
 
     class updateTwitterStatus extends AsyncTask<String, String, String> {
@@ -381,10 +340,7 @@ public class MainActivity extends AppCompatActivity {
 
                 AccessToken accessToken = new AccessToken(access_token, access_token_secret);
                 Twitter twitter = new TwitterFactory(builder.build()).getInstance(accessToken);
-                User user = twitter.verifyCredentials();
-                statuses = twitter.getHomeTimeline();
 
-                Log.v(LOG_TAG, "STATUSES: " + statuses.get(0).toString());
                 // Update status
                 twitter4j.Status response = twitter.updateStatus(status);
 
@@ -446,7 +402,6 @@ public class MainActivity extends AppCompatActivity {
         lblUserName.setText("");
         lblUserName.setVisibility(View.GONE);
         btnGetTimeline.setVisibility(View.GONE);
-
         btnLoginTwitter.setVisibility(View.VISIBLE);
     }
 
